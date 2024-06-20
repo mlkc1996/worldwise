@@ -1,4 +1,10 @@
+import { useParams } from "react-router-dom";
 import styles from "./City.module.css";
+
+const flagemojiToPNG = (flag) => {
+  var countryCode = Array.from(flag, (codeUnit) => codeUnit.codePointAt()).map(char => String.fromCharCode(char - 127397).toLowerCase()).join('');
+  return (<img src={`https://flagcdn.com/24x18/${countryCode}.png`} alt='flag' />);
+};
 
 const formatDate = (date) =>
   new Intl.DateTimeFormat("en", {
@@ -8,14 +14,16 @@ const formatDate = (date) =>
     weekday: "long",
   }).format(new Date(date));
 
+// TEMP DATA
+const currentCity = {
+  cityName: "Lisbon",
+  emoji: "🇵🇹",
+  date: "2027-10-31T15:59:59.138Z",
+  notes: "My favorite city so far!",
+};
+
 function City() {
-  // TEMP DATA
-  const currentCity = {
-    cityName: "Lisbon",
-    emoji: "🇵🇹",
-    date: "2027-10-31T15:59:59.138Z",
-    notes: "My favorite city so far!",
-  };
+  const { id } = useParams();
 
   const { cityName, emoji, date, notes } = currentCity;
 
@@ -24,7 +32,7 @@ function City() {
       <div className={styles.row}>
         <h6>City name</h6>
         <h3>
-          <span>{emoji}</span> {cityName}
+          <span>{flagemojiToPNG(emoji)}</span> {cityName}
         </h3>
       </div>
 
@@ -52,7 +60,7 @@ function City() {
       </div>
 
       <div>
-        <ButtonBack />
+        {/* <ButtonBack /> */}
       </div>
     </div>
   );
