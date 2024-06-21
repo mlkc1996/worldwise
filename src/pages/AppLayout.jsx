@@ -8,29 +8,29 @@ const url = `http://localhost:8000/cities`;
 
 
 function AppLayout() {
-    const [cities, setCities] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    useEffect(() => {
-        const fetchCities = async () => {
-            try {
-                setIsLoading(true);
-                const res = await fetch(url);
-                const data = await res.json();
-                setCities(data);
-            } catch {
-                alert("Error loading city data");
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    // const [cities, setCities] = useState([]);
+    // const [isLoading, setIsLoading] = useState(false);
+    // useEffect(() => {
+    //     const fetchCities = async () => {
+    //         try {
+    //             setIsLoading(true);
+    //             const res = await fetch(url);
+    //             const data = await res.json();
+    //             setCities(data);
+    //         } catch {
+    //             alert("Error loading city data");
+    //         } finally {
+    //             setIsLoading(false);
+    //         }
+    //     };
 
-        fetchCities();
-    }, []);
+    //     fetchCities();
+    // }, []);
 
 
     return (
         <div className={styles.app}>
-            <Sidebar element={<Outlet context={{ cities, isLoading }} />} />
+            <Sidebar />
             <Map />
         </div>
     );

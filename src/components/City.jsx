@@ -1,5 +1,9 @@
 import { useParams } from "react-router-dom";
 import styles from "./City.module.css";
+import { useEffect, useState } from "react";
+import { useCities } from "./../contexts/CitiesContext";
+import Spinner from "./Spinner";
+import ButtonBack from "./ButtonBack";
 
 const flagemojiToPNG = (flag) => {
   var countryCode = Array.from(flag, (codeUnit) => codeUnit.codePointAt()).map(char => String.fromCharCode(char - 127397).toLowerCase()).join('');
@@ -14,16 +18,22 @@ const formatDate = (date) =>
     weekday: "long",
   }).format(new Date(date));
 
-// TEMP DATA
-const currentCity = {
-  cityName: "Lisbon",
-  emoji: "🇵🇹",
-  date: "2027-10-31T15:59:59.138Z",
-  notes: "My favorite city so far!",
-};
 
 function City() {
   const { id } = useParams();
+  const { getCity, currentCity, isLoading } = useCities();
+
+  const { id: cityId } = currentCity ?? {};
+
+  useEffect(() => {
+    if (id != cityId) {
+      getCity(id);
+    }
+  }, [id, getCity, cityId]);
+
+  if (isLoading || cityId != id) {
+    return <Spinner />;
+  }
 
   const { cityName, emoji, date, notes } = currentCity;
 
@@ -60,7 +70,7 @@ function City() {
       </div>
 
       <div>
-        {/* <ButtonBack /> */}
+        <ButtonBack />
       </div>
     </div>
   );

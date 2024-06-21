@@ -1,12 +1,13 @@
 import styles from './SideBar.module.css';
 import Logo from "./Logo";
 import AppNav from "./AppNav";
-function Sidebar({ element }) {
+import { Outlet } from 'react-router-dom';
+function Sidebar() {
     return (
         <div className={styles.sidebar}>
             <Logo />
             <AppNav />
-            {element}
+            <Outlet />
             <footer className={styles.footer}>
                 <p className={styles.copyright}>
                     &copy; Copyright {new Date().getFullYear()} by WorldWise Inc.

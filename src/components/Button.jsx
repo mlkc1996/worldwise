@@ -1,8 +1,12 @@
 import styles from './Button.module.css';
 
 function Button({ children, onClick, type }) {
+
+    const hasOnClick = typeof onClick === "function";
+
+
     return (
-        <button onClick={onClick ? onClick() : () => { }}
+        <button onClick={hasOnClick ? onClick : () => { }}
             className={`${styles.btn} ${styles[type]}`}
         >
             {children}
