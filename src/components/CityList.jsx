@@ -3,12 +3,19 @@ import Spinner from "./Spinner";
 import CityItem from './CityItem';
 import Message from "./Message";
 import { useCities } from '../contexts/CitiesContext';
+import { useEffect } from 'react';
 
 
 function CityList() {
-    const { cities, isLoading } = useCities();
+    const { cities, isLoading,cityListUpToDate , loadCities} = useCities();
 
-    if (isLoading) {
+    useEffect(() => {
+        if (!cityListUpToDate) {
+            loadCities()
+        }
+    }, [cityListUpToDate, loadCities])
+
+    if (!cityListUpToDate || isLoading) {
         return <Spinner />;
     }
 

@@ -6,15 +6,18 @@ export function CitiesProvider({ children }) {
     const [cities, setCities] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [currentCity, setCurrentCity] = useState(undefined);
+    const [cityListUpToDate, setCityListUpToDate] = useState(false)
 
     const loadCities = useCallback(async () => {
         try {
-            setIsLoading(true);
+           setIsLoading(true);
             const res = await fetch(url);
             const data = await res.json();
             setCities(data);
-        } catch {
-            alert("Error loading city data");
+            setCityListUpToDate(true)
+        } catch(err) {
+            console.log("Error in loading cities data");
+            throw err
         } finally {
             setIsLoading(false);
         }
@@ -22,12 +25,54 @@ export function CitiesProvider({ children }) {
 
     const getCity = useCallback(async (id) => {
         try {
-            setIsLoading(true);
+           setIsLoading(true);
             const res = await fetch(`${url}/${id}`);
             const data = await res.json();
             setCurrentCity(data);
-        } catch {
-            alert("Error loading city data");
+        } catch(err) {
+            console.log("Error in loading city data");
+            throw err
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+
+    const createCity = useCallback(async (newCity) => {
+        try {
+           setIsLoading(true);
+            const res = await fetch(url, {
+                method:"POST",
+                body:JSON.stringify(newCity),
+                headers:{
+                    "Content-Type":"application/json"
+                }
+            });
+            const data = await res.json();
+            setCurrentCity(data);
+            setCityListUpToDate(false)
+        } catch(err) {
+            console.log("Error in saving city data");
+            throw err
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    const deleteCity = useCallback(async (id) => {
+        try {
+           setIsLoading(true);
+            const res = await fetch(`${url}/${id}`, {
+                method:"DELETE",
+            });
+            await res.json();
+            if (currentCity?.id === id) {
+                setCurrentCity(null);
+            }
+            setCityListUpToDate(false)
+        } catch(err) {
+            console.log("Error in deleting a city");
+            throw err
         } finally {
             setIsLoading(false);
         }
@@ -43,7 +88,10 @@ export function CitiesProvider({ children }) {
             isLoading,
             loadCities,
             currentCity,
-            getCity
+            getCity,
+            createCity,
+            cityListUpToDate,
+            deleteCity
         }}
     >
         {children}
