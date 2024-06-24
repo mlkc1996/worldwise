@@ -1,82 +1,135 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useReducer, useState } from "react";
 const CitiesContext = createContext();
 const url = `http://localhost:8000/cities`;
 
+const initialState = {
+    cities: [],
+    isLoading: false,
+    currentCity: null,
+    cityListUpToDate: false,
+    error: ""
+};
+
+const reducer = (state, action) => {
+    switch (action.type) {
+        case 'loading':
+            return {
+                ...state,
+                isLoading: true
+            };
+        case 'cities/loaded':
+            return {
+                ...state,
+                isLoading: false,
+                cities: action.payload,
+                cityListUpToDate: true
+            };
+        case 'city/loaded':
+            return {
+                ...state,
+                isLoading: false,
+                currentCity: action.payload,
+            };
+        case 'city/created':
+            return {
+                ...state,
+                isLoading: false,
+                currentCity: action.payload,
+                cityListUpToDate: false
+            };
+        case 'city/deleted': {
+            return {
+                ...state,
+                isLoading: false,
+                currentCity: action.payload,
+                cityListUpToDate: false
+            };
+        }
+        case 'rejected': {
+            return {
+                ...state,
+                isLoading: false,
+                error: action.payload
+            };
+        }
+        default:
+            throw new Error("Unknown action type");
+    }
+};
+
 export function CitiesProvider({ children }) {
-    const [cities, setCities] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [currentCity, setCurrentCity] = useState(undefined);
-    const [cityListUpToDate, setCityListUpToDate] = useState(false)
+
+    const [{
+        cities,
+        isLoading,
+        currentCity,
+        cityListUpToDate
+    }, dispatch] = useReducer(reducer, initialState);
 
     const loadCities = useCallback(async () => {
         try {
-           setIsLoading(true);
+            dispatch({ type: "loading" });
             const res = await fetch(url);
             const data = await res.json();
-            setCities(data);
-            setCityListUpToDate(true)
-        } catch(err) {
+            dispatch({ type: 'cities/loaded', payload: data });
+        } catch (err) {
             console.log("Error in loading cities data");
-            throw err
-        } finally {
-            setIsLoading(false);
+            dispatch({ type: 'rejected', payload: err.message });
         }
     }, []);
 
     const getCity = useCallback(async (id) => {
         try {
-           setIsLoading(true);
+            if (id == currentCity?.id) {
+                return;
+            }
+
+            dispatch({ type: "loading" });
             const res = await fetch(`${url}/${id}`);
             const data = await res.json();
-            setCurrentCity(data);
-        } catch(err) {
+            dispatch({ type: 'city/loaded', payload: data });
+        } catch (err) {
             console.log("Error in loading city data");
-            throw err
-        } finally {
-            setIsLoading(false);
+            dispatch({ type: 'rejected', payload: err.message });
         }
     }, []);
 
 
     const createCity = useCallback(async (newCity) => {
         try {
-           setIsLoading(true);
+            dispatch({ type: "loading" });
             const res = await fetch(url, {
-                method:"POST",
-                body:JSON.stringify(newCity),
-                headers:{
-                    "Content-Type":"application/json"
+                method: "POST",
+                body: JSON.stringify(newCity),
+                headers: {
+                    "Content-Type": "application/json"
                 }
             });
             const data = await res.json();
-            setCurrentCity(data);
-            setCityListUpToDate(false)
-        } catch(err) {
+            dispatch({ type: 'city/created', payload: data });
+        } catch (err) {
             console.log("Error in saving city data");
-            throw err
-        } finally {
-            setIsLoading(false);
+            dispatch({ type: 'rejected', payload: err.message });
         }
     }, []);
 
     const deleteCity = useCallback(async (id) => {
         try {
-           setIsLoading(true);
+            dispatch({ type: "loading" });
             const res = await fetch(`${url}/${id}`, {
-                method:"DELETE",
+                method: "DELETE",
             });
             await res.json();
+            let payload = currentCity;
             if (currentCity?.id === id) {
-                setCurrentCity(null);
+                payload = null;
             }
-            setCityListUpToDate(false)
-        } catch(err) {
+            dispatch({ type: 'city/deleted', payload });
+        } catch (err) {
             console.log("Error in deleting a city");
-            throw err
-        } finally {
-            setIsLoading(false);
+            dispatch({ type: 'rejected', payload: err.message });
         }
-    }, []);
+    }, [currentCity]);
 
     useEffect(() => {
         loadCities();

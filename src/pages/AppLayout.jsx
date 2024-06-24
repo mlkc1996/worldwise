@@ -1,36 +1,27 @@
 import Sidebar from "./../components/Sidebar";
 import styles from './AppLayout.module.css';
 import Map from "./../components/Map";
-import { Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
-
-const url = `http://localhost:8000/cities`;
-
+import User from "./../components/User";
+import { useEffect } from "react";
+import { useAuth } from "../contexts/FakeAuthContext";
+import { useNavigate } from "react-router-dom";
 
 function AppLayout() {
-    // const [cities, setCities] = useState([]);
-    // const [isLoading, setIsLoading] = useState(false);
-    // useEffect(() => {
-    //     const fetchCities = async () => {
-    //         try {
-    //             setIsLoading(true);
-    //             const res = await fetch(url);
-    //             const data = await res.json();
-    //             setCities(data);
-    //         } catch {
-    //             alert("Error loading city data");
-    //         } finally {
-    //             setIsLoading(false);
-    //         }
-    //     };
+    const { authenticated } = useAuth();
+    const navigate = useNavigate();
 
-    //     fetchCities();
-    // }, []);
+    useEffect(() => {
+        if (!authenticated) {
+            navigate("/login");
+        }
+
+    }, [authenticated, navigate]);
 
 
     return (
         <div className={styles.app}>
             <Sidebar />
+            {authenticated && <User />}
             <Map />
         </div>
     );

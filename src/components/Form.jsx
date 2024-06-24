@@ -6,14 +6,14 @@ import styles from "./Form.module.css";
 import { useNavigate } from "react-router-dom";
 import ButtonBack from "./ButtonBack";
 import UseUrlPosition from "../hooks/useUrlPosition";
-import Emoji from "./Emoji"
-import Message from "./Message"
-import Spinner from "./Spinner"
+import Emoji from "./Emoji";
+import Message from "./Message";
+import Spinner from "./Spinner";
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useCities } from "../contexts/CitiesContext";
-
+import { useGeolocation } from "../hooks/useGeolocation";
 
 export function convertToEmoji(countryCode) {
   const codePoints = countryCode
@@ -22,7 +22,7 @@ export function convertToEmoji(countryCode) {
     .map((char) => 127397 + char.charCodeAt());
   return String.fromCodePoint(...codePoints);
 }
-const BASE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client"
+const BASE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
 function Form() {
   const [lat, lng] = UseUrlPosition();
@@ -31,86 +31,94 @@ function Form() {
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState("");
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false)
-  const [geocodingError, setGeoCodingError] = useState("")
+  const [isLoading, setIsLoading] = useState(false);
+  const [geocodingError, setGeoCodingError] = useState("");
+  const [created, setCreated] = useState(false);
+  const { position: geolocationPosition } = useGeolocation();
+
 
   const {
     createCity,
-    isLoading:useCitiesLoading
-  } = useCities()
+    isLoading: useCitiesLoading,
+  } = useCities();
 
 
-  const fetchCityData = useCallback(async(lat, lng) => {
+  const fetchCityData = useCallback(async (lat, lng) => {
     try {
-      setGeoCodingError("")
-      setIsLoading(true)
-      const res = await fetch(`${BASE_URL}?latitude=${lat}&longitude=${lng}`)
+      setGeoCodingError("");
+      setIsLoading(true);
+      const res = await fetch(`${BASE_URL}?latitude=${lat}&longitude=${lng}`);
       const data = await res.json();
       if (!data?.countryCode) {
-        throw new Error("That doesn't seem to be a city. Click somewhere else.")
+        throw new Error("That doesn't seem to be a city. Click somewhere else.");
       }
-      setCityName(data.city || data.locality || "")
+      setCityName(data.city || data.locality || "");
       setCountry({
-        name:data.countryName || "",
-        code:data.countryCode || ""
-      })
-    } catch(err) {
-      setGeoCodingError(err.message)
+        name: data.countryName || "",
+        code: data.countryCode || ""
+      });
+    } catch (err) {
+      setGeoCodingError(err.message);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
-
+  }, []);
 
   useEffect(() => {
-    if (lat && lng) {
-      fetchCityData(lat, lng)
+    if (created) {
+      navigate(`/app/cities`);
+      return;
     }
-  }, [lat, lng, fetchCityData])
+
+    if (lat && lng) {
+      fetchCityData(lat, lng);
+    }
+  }, [lat, lng, fetchCityData, created, navigate]);
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
 
-    if(!cityName || !date) {
-      return
+    if (!cityName || !date) {
+      return;
     }
 
     const newCity = {
       cityName,
-      country:country.name,
-      date:date.toISOString(),
+      country: country.name,
+      date: date.toISOString(),
       notes,
-      emoji:convertToEmoji(country.code),
+      emoji: convertToEmoji(country.code),
       position: {
-        lat:+lat, 
-        lng:+lng
+        lat: +lat,
+        lng: +lng
       }
-    }
+    };
 
     try {
       await createCity(newCity);
-      navigate(`/app/cities`);
-    } catch(err) {
-      alert(err.message)
+      setCreated(true);
+    } catch (err) {
+      alert(err.message);
     }
-  }
+  };
 
 
   if (!lat && !lng) {
-    return <Message message='Start by clicking somewhere on the map' />
+    return <Message message='Start by clicking somewhere on the map' />;
   }
 
   if (geocodingError) {
-    return <Message message={geocodingError} />
+    return <Message message={geocodingError} />;
   }
 
   if (isLoading) {
-    return <Spinner />
+    return <Spinner />;
   }
 
 
   return (
-    <form className={`${styles.form} ${useCitiesLoading?styles.loading:''}`} onSubmit={onSubmitHandler}>
+    <form className={`${styles.form} ${useCitiesLoading ? styles.loading : ''}`} >
       <div className={styles.row}>
         <label htmlFor="cityName">City name</label>
         <input
@@ -119,7 +127,7 @@ function Form() {
           value={cityName}
         />
         <span className={styles.flag}>
-          <Emoji countryCode={country?.code}/>
+          <Emoji countryCode={country?.code} />
         </span>
       </div>
 
@@ -140,8 +148,11 @@ function Form() {
       </div>
 
       <div className={styles.buttons}>
-        <Button type="primary">Add</Button>
-        <ButtonBack />
+        <Button type="primary" onClick={onSubmitHandler}>Add</Button>
+        <ButtonBack onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }} />
       </div>
     </form>
   );

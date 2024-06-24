@@ -9,51 +9,64 @@ import Emoji from "./Emoji";
 import { useMap, useMapEvents } from 'react-leaflet';
 import { useGeolocation } from "./../hooks/useGeolocation";
 import Button from "./Button";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 function Map() {
     const [searchParams, setSearchParmas] = useSearchParams();
     const { cities, currentCity } = useCities();
     const navigate = useNavigate();
     const { isLoading: isLoadingPosition, position: geolocationPosition, getPosition } = useGeolocation();
+    const [useGeolocationPosition, setUseGeolocationPosition] = useState(false);
 
-    const lat = searchParams.get("lat") || currentCity?.position?.lat || "";
-    const lng = searchParams.get("lng") || currentCity?.position?.lng || "";
+    const mapLat = searchParams.get("lat") || currentCity?.position?.lat || "";
+    const mapLng = searchParams.get("lng") || currentCity?.position?.lng || "";
+
 
     useEffect(() => {
+        if (mapLat && mapLng) {
+            return;
+        }
+
         if (!geolocationPosition) {
             return;
         }
 
         const { lat, lng } = geolocationPosition;
 
-        navigate(`form?lat=${lat}&lng=${lng}`);
+        if (useGeolocationPosition && (lat != mapLat || lng != mapLng)) {
+            navigate(`form?lat=${lat}&lng=${lng}`);
+        }
 
-    }, [geolocationPosition, navigate]);
+    }, [geolocationPosition, navigate, mapLat, mapLng, useGeolocationPosition]);
 
+    const onUseGeolocation = () => {
+        getPosition();
+        setUseGeolocationPosition(true);
+    };
 
     return (
         <div id="map" className={styles.mapContainer}>
             {
-                !geolocationPosition && <Button type="position" onClick={getPosition}>{
+                !useGeolocationPosition && <Button type="position" onClick={onUseGeolocation}>{
                     isLoadingPosition ? "Loading ..." : "Use your position"
                 }</Button>
             }
-            <MapContainer center={[lat, lng]} zoom={6} scrollWheelZoom={true} className={styles.map}>
+            <MapContainer center={[mapLat, mapLng]} zoom={6} scrollWheelZoom={true} className={styles.map}>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
                 />
                 {cities && cities.map((city) => {
                     const { position, id } = city;
-                    const { lat, lng } = position ?? {}
+                    const { lat, lng } = position ?? {};
                     if (!position) {
-                        console.log(city)
+                        console.log(city);
                     }
                     return (<Marker position={[lat, lng]} key={id}
                         eventHandlers={{
                             click() {
                                 navigate(`cities/${id}?lat=${lat}&lng=${lng}`);
+                                setUseGeolocationPosition(false);
                             }
                         }}
                     >
@@ -65,8 +78,10 @@ function Map() {
                         </Popup>
                     </Marker>);
                 })}
-                <ChangeCenter position={[lat, lng]} />
-                <DetectClick />
+                <ChangeCenter position={[mapLat, mapLng]} />
+                <DetectClick onClick={() => {
+                    setUseGeolocationPosition(false);
+                }} />
             </MapContainer>
         </div>
     );
@@ -79,7 +94,7 @@ function ChangeCenter({ position }) {
     return null;
 }
 
-function DetectClick() {
+function DetectClick({ onClick }) {
     const navigate = useNavigate();
     useMapEvents({
         click(e) {
@@ -90,7 +105,13 @@ function DetectClick() {
             if (lat && lng) {
                 query_string = `?lat=${lat}&lng=${lng}`;
             }
+
+
             navigate(`form${query_string}`);
+
+            if (typeof onClick === "function") {
+                onClick(e);
+            }
         },
     });
 }
