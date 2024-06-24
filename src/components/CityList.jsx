@@ -7,13 +7,17 @@ import { useEffect } from 'react';
 
 
 function CityList() {
-    const { cities, isLoading,cityListUpToDate , loadCities} = useCities();
+    const { cities, isLoading, cityListUpToDate, loadCities, error } = useCities();
 
     useEffect(() => {
         if (!cityListUpToDate) {
-            loadCities()
+            loadCities();
         }
-    }, [cityListUpToDate, loadCities])
+    }, [cityListUpToDate, loadCities]);
+
+    if (error) {
+        return <Message message={error} />;
+    }
 
     if (!cityListUpToDate || isLoading) {
         return <Spinner />;

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useReducer, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from "react";
 const CitiesContext = createContext();
 const url = `http://localhost:8000/cities`;
 
@@ -15,7 +15,8 @@ const reducer = (state, action) => {
         case 'loading':
             return {
                 ...state,
-                isLoading: true
+                isLoading: true,
+                error: "",
             };
         case 'cities/loaded':
             return {
@@ -41,7 +42,7 @@ const reducer = (state, action) => {
             return {
                 ...state,
                 isLoading: false,
-                currentCity: action.payload,
+                currentCity: action.payload === null ? null : state.currentCity,
                 cityListUpToDate: false
             };
         }
@@ -49,7 +50,7 @@ const reducer = (state, action) => {
             return {
                 ...state,
                 isLoading: false,
-                error: action.payload
+                error: action.payload,
             };
         }
         default:
@@ -63,7 +64,8 @@ export function CitiesProvider({ children }) {
         cities,
         isLoading,
         currentCity,
-        cityListUpToDate
+        cityListUpToDate,
+        error
     }, dispatch] = useReducer(reducer, initialState);
 
     const loadCities = useCallback(async () => {
@@ -92,7 +94,7 @@ export function CitiesProvider({ children }) {
             console.log("Error in loading city data");
             dispatch({ type: 'rejected', payload: err.message });
         }
-    }, []);
+    }, [currentCity?.id]);
 
 
     const createCity = useCallback(async (newCity) => {
@@ -120,7 +122,7 @@ export function CitiesProvider({ children }) {
                 method: "DELETE",
             });
             await res.json();
-            let payload = currentCity;
+            let payload = undefined;
             if (currentCity?.id === id) {
                 payload = null;
             }
@@ -129,14 +131,14 @@ export function CitiesProvider({ children }) {
             console.log("Error in deleting a city");
             dispatch({ type: 'rejected', payload: err.message });
         }
-    }, [currentCity]);
+    }, [currentCity?.id]);
 
     useEffect(() => {
         loadCities();
     }, [loadCities]);
 
-    return <CitiesContext.Provider
-        value={{
+    const value = useMemo(() => {
+        return {
             cities,
             isLoading,
             loadCities,
@@ -144,8 +146,13 @@ export function CitiesProvider({ children }) {
             getCity,
             createCity,
             cityListUpToDate,
-            deleteCity
-        }}
+            deleteCity,
+            error
+        };
+    }, [cities, isLoading, loadCities, currentCity, getCity, createCity, cityListUpToDate, deleteCity, error]);
+
+    return <CitiesContext.Provider
+        value={value}
     >
         {children}
     </CitiesContext.Provider>;

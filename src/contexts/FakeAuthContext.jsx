@@ -49,6 +49,8 @@ const AuthProvider = ({ children }) => {
         dispatch({ type: "logout" });
     };
 
+
+
     return (
         <AuthContext.Provider value={{
             login,
